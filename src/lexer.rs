@@ -130,10 +130,15 @@ impl<'a> Lexer<'a> {
                 }
                 // Operators
                 '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' => {
+                    let char = self.char;
                     self.update_token();
-                    let next = self.next();
-                    if (next == '+' || next == '-' || next == '<' || next == '>') && next == self.char {
+                    self.next();
+
+                    if ((self.char == '+' || self.char == '-' || self.char == '<' || self.char == '>') && self.char == char) ||
+                        (self.char == '=' && (char == '!' || char == '='))
+                    {
                         self.update_token();
+                        self.next();
                     }
                     self.end_token(Operator);
                     continue 'char;

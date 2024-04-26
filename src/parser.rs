@@ -21,6 +21,7 @@ pub enum Node {
     BinaryExpr(Box<Node>, Rc<Token>, Box<Node>), // Left, operator, Right
     UnaryExpr(Box<Node>, Rc<Token>), // Left, operator
     ForLoop(Box<Node>, Box<Node>, Box<Node>), // Var, condition, increment
+    IfStatement(Box<Node>, Box<Node>), // Condition, block
 }
 
 #[derive(Debug)]
@@ -123,6 +124,13 @@ impl Parser {
                         self.next(); // Past ;
                         let inc = self.expression().unwrap();
                         Some(ForLoop(Box::new(var), Box::new(condition), Box::new(inc)))
+                    }
+                    "if" => {
+                        self.next(); // Past if
+                        self.next(); // Past (
+                        let condition = Box::new(self.expression().unwrap());
+                        self.next();
+                        Some(IfStatement(condition, Box::new(self.statement().unwrap())))
                     }
                     _val => {
                         None
