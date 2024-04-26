@@ -1,3 +1,4 @@
+use std::fmt::{format, Write};
 #[allow(dead_code,unused_variables)]
 use std::time::Instant;
 use crate::lexer::Lexer;
@@ -19,6 +20,12 @@ fn main() {
     parser.parse();
 
     let et = Instant::now();
+
+    let mut output = String::new();
+    for statement in parser.statements.iter() {
+        output.write_str(format!("{:?}\n", statement).as_str()).unwrap();
+    }
+    std::fs::write("output.txt", output).unwrap();
 
     println!("{:?}, {}", et-st, lexer.tokens.len());
 }

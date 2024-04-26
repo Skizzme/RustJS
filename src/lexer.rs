@@ -1,4 +1,4 @@
-
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use crate::lexer::TokenType::*;
 
@@ -8,19 +8,20 @@ pub enum TokenType {
     Punctuator,
     Number,
     StringLit,
-    Identifier,
+    Word,
     Operator,
     Keyword,
+    EndOfFile,
 }
 
 impl Default for TokenType {
     fn default() -> Self {
-        StringLit
+        EndOfFile
     }
 }
 
 #[allow(dead_code,unused_variables)]
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct Token {
     value: String,
     token_type: TokenType,
@@ -30,6 +31,12 @@ pub struct Token {
     end_line: usize,
     start_column: usize,
     end_column: usize
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
+    }
 }
 
 impl Token {
@@ -105,7 +112,7 @@ impl<'a> Lexer<'a> {
     pub fn process(&mut self) {
 
         'char : while self.index < self.data.len() {
-            self.new_token(Identifier);
+            self.new_token(Word);
 
             match self.char {
                 // String literals inside double quotes
@@ -145,7 +152,7 @@ impl<'a> Lexer<'a> {
                                 self.end_token(Keyword);
                             }
                             _val => {
-                                self.end_token(Identifier);
+                                self.end_token(Word);
                             }
                         }
                         continue 'char;

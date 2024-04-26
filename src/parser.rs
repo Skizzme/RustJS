@@ -1,22 +1,25 @@
+use std::cmp::PartialEq;
 use std::rc::Rc;
 use crate::lexer::{Token, TokenType};
 use crate::lexer::TokenType::*;
-use crate::parser::Node::{Array, Literal, Member, MethodCall, VarDec};
+use crate::parser::Node::*;
 
 #[derive(Debug)]
 pub enum Node {
     MethodCall(Rc<Token>, Vec<Node>),
     Array(Vec<Node>),
-    Member(Rc<Token>, Box<Node>),
+    Member(Rc<Node>, Box<Node>),
     VarDec(Rc<Token>, Box<Node>),
     VarAssign(Box<Node>, Box<Node>),
     Literal(Rc<Token>),
+    Identifier(Rc<Token>),
+    ExprStatement(Box<Node>),
 }
 
 #[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Rc<Token>>,
-    statements: Vec<Rc<Node>>,
+    pub(crate) statements: Vec<Rc<Node>>,
     index: usize,
     token: Rc<Token>,
     last_token: Rc<Token>,
@@ -44,9 +47,6 @@ impl Parser {
             }
             self.next();
         }
-        for statement in self.statements.iter() {
-            println!("{:?}", statement);
-        }
     }
 
     fn statement(&mut self) -> Option<Node> {
@@ -54,8 +54,8 @@ impl Parser {
             Punctuator => {None}
             Number => {None}
             StringLit => {None}
-            Identifier => {
-                None
+            Word => {
+                Some(ExprStatement(Box::new(self.expression().unwrap())))
             }
             Operator => {None}
             Keyword => {
@@ -79,6 +79,7 @@ impl Parser {
                     None
                 }
             }
+            _ => {None}
         }
     }
 
@@ -99,7 +100,7 @@ impl Parser {
                         self.next();
                         Some(Array(items))
                     }
-                    val => {None}
+                    val => { None } // These cases should be handled when this is called from other places, such as there being a (), and this running into the )
                 }
             }
             Number => {
@@ -112,13 +113,9 @@ impl Parser {
                 self.next();
                 Some(Literal(t))
             }
-            Identifier => {
+            Word => {
                 let id = self.token.clone();
-                match self.next().value() {
-                    "." => {
-                        self.next();
-                        Some(Member(id, Box::new(self.expression().unwrap())))
-                    }
+                let mut l_member = match self.next().value() {
                     "(" => {
                         self.next(); // Skips the (
                         let mut args = Vec::new();
@@ -127,22 +124,49 @@ impl Parser {
                                 Some(expr) => {
                                     args.push(expr);
                                 }
-                                None => {}
+                                None => {
+                                    self.next();
+                                    break
+                                }
                             }
                             if self.token.value() != "," {
+                                self.next();
                                 break
                             }
                             self.next();
                         }
-                        self.next();
-                        Some(MethodCall(id, args))
-                        // while self.next()
+                        MethodCall(id, args)
                     }
-                    str => {None}
+                    str => {
+                        Node::Identifier(id)
+                    } // Should be handled below
+                };
+
+                while self.token.value() == "." {
+                    self.next();
+                    match self.expression() {
+                        Some(expr) => {
+                            l_member = Member(Rc::new(l_member), Box::new(expr));
+                        }
+                        None => {
+                            // println!("Expected expression at: {:?}", self.token)
+                        }
+                    }
                 }
+                Some(l_member)
             }
-            Operator => {None}
-            Keyword => {None}
+            Operator => {
+                println!("Operator?");
+                None
+            }
+            Keyword => {
+                println!("Keyword?");
+                None
+            }
+            EndOfFile => {
+                println!("Reached end of tokens..");
+                None
+            }
         }
     }
 
