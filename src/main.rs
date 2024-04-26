@@ -1,18 +1,24 @@
 #[allow(dead_code,unused_variables)]
 use std::time::Instant;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
 
 mod lexer;
+mod parser;
 
 fn main() {
     let args : Vec<String> = std::env::args().collect();
-    let st = Instant::now();
     let data = std::fs::read(args.get(1).unwrap()).unwrap();
 
-    let mut parser = lexer::Lexer::new(data.as_slice());
-    parser.process();
+    let st = Instant::now();
+
+    let mut lexer = Lexer::new(data.as_slice());
+    lexer.process();
+
+    let mut parser = Parser::new(lexer.tokens.clone());
+    parser.parse();
+
     let et = Instant::now();
-    for t in parser.tokens.iter() {
-        println!("{:?}", t);
-    }
-    println!("{:?}, {}", et-st, parser.tokens.len());
+
+    println!("{:?}, {}", et-st, lexer.tokens.len());
 }

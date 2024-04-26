@@ -4,7 +4,7 @@ use crate::lexer::TokenType::*;
 
 #[allow(dead_code,unused_variables)]
 #[derive(Debug, Clone)]
-enum TokenType {
+pub enum TokenType {
     Punctuator,
     Number,
     StringLit,
@@ -33,7 +33,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn new(value: String, token_type: TokenType, start_index: usize, end_index: usize, start_line: usize, end_line: usize, start_column: usize, end_column: usize,) -> Self {
+    pub fn new(value: String, token_type: TokenType, start_index: usize, end_index: usize, start_line: usize, end_line: usize, start_column: usize, end_column: usize,) -> Self {
         Token {
             value,
             token_type,
@@ -44,6 +44,35 @@ impl Token {
             start_column,
             end_column,
         }
+    }
+
+    pub fn pr(&self) {
+        println!("{:?}", self);
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+    pub fn token_type(&self) -> &TokenType {
+        &self.token_type
+    }
+    pub fn start_index(&self) -> usize {
+        self.start_index
+    }
+    pub fn end_index(&self) -> usize {
+        self.end_index
+    }
+    pub fn start_line(&self) -> usize {
+        self.start_line
+    }
+    pub fn end_line(&self) -> usize {
+        self.end_line
+    }
+    pub fn start_column(&self) -> usize {
+        self.start_column
+    }
+    pub fn end_column(&self) -> usize {
+        self.end_column
     }
 }
 
@@ -66,7 +95,7 @@ impl<'a> Lexer<'a> {
             index: 0usize,
             line: 0usize,
             column: 0usize,
-            char: '\r',
+            char: data[0] as char,
             last_char: '\r',
             token: Rc::new(Token::default()),
             tokens: Vec::new(),
@@ -79,41 +108,56 @@ impl<'a> Lexer<'a> {
             self.new_token(Identifier);
 
             match self.char {
-                '"' => { // String literals inside double quotes
+                // String literals inside double quotes
+                '"' => {
                     self.update_token();
-                    while self.next() != '"' && self.last_char != '\\' {
+
+                    while self.next() != '"' && self.last_char != '\\' && self.char != '\r' {
                         self.update_token();
                     }
+
                     self.update_token();
                     self.end_token(StringLit);
                 }
-                ',' | '(' | ')' | '{' | '}' | '[' | ']' | '.' | ';' => { // Punctuators
+                // Punctuators
+                '(' | ')' | '{' | '}' | '[' | ']' | '<' | '>' | ',' | '.' | ';' => {
                     self.update_token();
                     self.end_token(Punctuator);
                 }
-                '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' => { // Operators
+                // Operators
+                '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' => {
                     self.update_token();
                     if self.next() == '=' {
                         self.update_token();
                     }
                     self.end_token(Operator);
                 }
-                _char => {
-                    while self.char.is_alphabetic() { // Any words/identifiers
-                        self.update_token();
-                        self.next();
-                        if !self.char.is_alphabetic() {
-                            let tok = Rc::get_mut(&mut self.token).unwrap();
-                            match tok.value.as_str() {
-                                "var" | "function" | "for" | "if" | "null" => {
-                                    self.end_token(Keyword);
-                                }
-                                _val => {
-                                    self.end_token(Identifier);
-                                }
-                            }
-                            continue 'char;
+                char => {
+                    // Any words/identifiers
+                    if char.is_alphabetic() {
+                        while self.char.is_alphabetic() {
+                            self.update_token();
+                            self.next();
                         }
+                        let tok = Rc::get_mut(&mut self.token).unwrap();
+                        match tok.value.as_str() {
+                            "var" | "function" | "for" | "if" | "null" => {
+                                self.end_token(Keyword);
+                            }
+                            _val => {
+                                self.end_token(Identifier);
+                            }
+                        }
+                        continue 'char;
+                    }
+                    // Any numbers. EX. 1, 1.2, 1_200
+                    if char.is_numeric() {
+                        while self.char.is_numeric() || self.char == '.' || self.char == '_' {
+                            self.update_token();
+                            self.next();
+                        }
+                        self.end_token(Number);
+                        continue 'char;
                     }
                 }
             }
@@ -169,15 +213,12 @@ impl<'a> Lexer<'a> {
 
     fn end_token(&mut self, t: TokenType) {
         let m = Rc::get_mut(&mut self.token).unwrap();
-        // match m {
-        //     None => {}
-        //     Some(m) => {
-                m.token_type = t;
-                m.end_line = self.line;
-                m.end_index = self.index;
-                m.end_column = self.column;
-                self.tokens.push(self.token.clone());
-            // }
-        // }
+
+        m.token_type = t;
+        m.end_line = self.line;
+        m.end_index = self.index;
+        m.end_column = self.column;
+
+        self.tokens.push(self.token.clone());
     }
 }
