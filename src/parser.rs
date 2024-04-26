@@ -42,10 +42,10 @@ impl Parser {
 
     pub fn parse(&mut self) {
         while self.index < self.tokens.len() {
-            let st = self.statement();
-            match st {
+            match self.statement() {
                 Some(s) => {
-                    self.statements.push(Rc::new(s));}
+                    self.statements.push(Rc::new(s));
+                }
                 None => {}
             }
             self.next();
@@ -69,7 +69,6 @@ impl Parser {
                                 }
                             }
                         }
-                        self.next();
                         Some(Block(statements))
                     }
                     _ => {
@@ -108,7 +107,7 @@ impl Parser {
         }
     }
 
-    fn expression(&mut self) -> Option<Node> { // Should always position the index directly after whatever the expression contains
+    fn expression(&mut self) -> Option<Node> { // Should always be positioned at the last token of the statement
         match self.token.token_type() {
             Punctuator => {
                 match self.token.value() {
@@ -140,7 +139,7 @@ impl Parser {
             }
             Word => {
                 let id = self.token.clone();
-                let mut member = match self.next().value() {
+                match self.next().value() {
                     "(" => {
                         self.next(); // Skips the (
                         let mut args = Vec::new();
@@ -150,55 +149,41 @@ impl Parser {
                                     args.push(expr);
                                 }
                                 None => {
-                                    self.next();
                                     break
                                 }
                             }
                             if self.token.value() != "," {
-                                self.next();
                                 break
                             }
                             self.next();
                         }
-                        FunctionCall(id.clone(), args)
+                        Some(FunctionCall(id, args))
                     }
-                    // "." => {
-                    //     self.next();
-                    //     match self.expression() {
-                    //         Some(expr) => {
-                    //             Some(Member(Rc::new(Identifier(id)), Box::new(expr)))
-                    //         }
-                    //         None => {
-                    //             None
-                    //         }
-                    //     }
-                    // }
+                    "." => {
+                        self.next();
+                        match self.expression() {
+                            Some(expr) => {
+                                Some(Member(Rc::new(Identifier(id)), Box::new(expr)))
+                            }
+                            None => {
+                                None
+                            }
+                        }
+                    }
                     str => {
-                        Identifier(id.clone())
+                        Some(Identifier(id))
                     } // Should be handled below
-                };
-
-                while self.token.value() == "." {
-                    self.next();
-                    match self.expression() {
-                        Some(expr) => {
-                            member = Member(Rc::new(member), Box::new(expr));
-                        }
-                        None => {
-                            // println!("Expected expression at: {:?}", self.token)
-                        }
-                    }
                 }
-                Some(member)
             }
             Operator => {
                 println!("Operator? {:?}", self.token);
                 None
-            }
+            },
             Keyword => {
                 match self.token.value() {
                     "null" => {
-                        Some(Literal(self.token.clone()))
+                        self.next();
+                        Some(Literal(self.last_token.clone()))
                     }
                     // Function expression, like a lambda or var a = function () {}
                     "function" => {
@@ -241,6 +226,7 @@ impl Parser {
     }
 
     fn next(&mut self) -> Rc<Token> {
+        self.last_token = self.token.clone();
         self.index += 1;
         if self.index >= self.tokens.len() {
             self.token = Rc::new(Token::default());

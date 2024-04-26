@@ -21,7 +21,7 @@ impl Default for TokenType {
 }
 
 #[allow(dead_code,unused_variables)]
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct Token {
     value: String,
     token_type: TokenType,
@@ -33,11 +33,11 @@ pub struct Token {
     end_column: usize
 }
 
-// impl Debug for Token {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
-//     }
-// }
+impl Debug for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
+    }
+}
 
 impl Token {
     pub fn new(value: String, token_type: TokenType, start_index: usize, end_index: usize, start_line: usize, end_line: usize, start_column: usize, end_column: usize,) -> Self {
