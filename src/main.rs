@@ -24,6 +24,7 @@ fn main() {
     let mut output = String::new();
     for statement in parser.statements.iter() {
         output.write_str(format!("{:?}\n", statement).as_str()).unwrap();
+        // println!("{:?}", statement);
     }
     std::fs::write("output.txt", output).unwrap();
 

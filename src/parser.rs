@@ -6,7 +6,7 @@ use crate::parser::Node::*;
 
 #[derive(Debug)]
 pub enum Node {
-    MethodCall(Rc<Token>, Vec<Node>),
+    FunctionCall(Rc<Token>, Vec<Node>),
     Array(Vec<Node>),
     Member(Rc<Node>, Box<Node>),
     VarDec(Rc<Token>, Box<Node>),
@@ -14,6 +14,9 @@ pub enum Node {
     Literal(Rc<Token>),
     Identifier(Rc<Token>),
     ExprStatement(Box<Node>),
+    FuncExpression(Rc<Token>, Vec<Rc<Token>>, Box<Node>), // The token of the "function" word, params, block statement
+    Block(Vec<Node>),
+    ListMember(Box<Node>, Box<Node>) // Identifier, Indexer EX list, i+1
 }
 
 #[derive(Debug)]
@@ -51,7 +54,29 @@ impl Parser {
 
     fn statement(&mut self) -> Option<Node> {
         match self.token.token_type() {
-            Punctuator => {None}
+            Punctuator => {
+                match self.token.value() {
+                    "{" => {
+                        self.next();
+                        let mut statements = Vec::new();
+                        while self.token.value() != "}" {
+                            match self.statement() {
+                                Some(expr) => {
+                                    statements.push(expr);
+                                }
+                                None => {
+                                    self.next();
+                                }
+                            }
+                        }
+                        self.next();
+                        Some(Block(statements))
+                    }
+                    _ => {
+                        None
+                    }
+                }
+            }
             Number => {None}
             StringLit => {None}
             Word => {
@@ -115,7 +140,7 @@ impl Parser {
             }
             Word => {
                 let id = self.token.clone();
-                let mut l_member = match self.next().value() {
+                let mut member = match self.next().value() {
                     "(" => {
                         self.next(); // Skips the (
                         let mut args = Vec::new();
@@ -135,10 +160,21 @@ impl Parser {
                             }
                             self.next();
                         }
-                        MethodCall(id, args)
+                        FunctionCall(id.clone(), args)
                     }
+                    // "." => {
+                    //     self.next();
+                    //     match self.expression() {
+                    //         Some(expr) => {
+                    //             Some(Member(Rc::new(Identifier(id)), Box::new(expr)))
+                    //         }
+                    //         None => {
+                    //             None
+                    //         }
+                    //     }
+                    // }
                     str => {
-                        Node::Identifier(id)
+                        Identifier(id.clone())
                     } // Should be handled below
                 };
 
@@ -146,25 +182,59 @@ impl Parser {
                     self.next();
                     match self.expression() {
                         Some(expr) => {
-                            l_member = Member(Rc::new(l_member), Box::new(expr));
+                            member = Member(Rc::new(member), Box::new(expr));
                         }
                         None => {
                             // println!("Expected expression at: {:?}", self.token)
                         }
                     }
                 }
-                Some(l_member)
+                Some(member)
             }
             Operator => {
-                println!("Operator?");
+                println!("Operator? {:?}", self.token);
                 None
             }
             Keyword => {
-                println!("Keyword?");
-                None
+                match self.token.value() {
+                    "null" => {
+                        Some(Literal(self.token.clone()))
+                    }
+                    // Function expression, like a lambda or var a = function () {}
+                    "function" => {
+                        let e = self.token.clone();
+                        if self.next().value() == "(" {
+                            let mut params = Vec::new();
+                            while self.token.value() == "(" || self.token.value() == "," {
+                                match self.token.token_type() {
+                                    Word => {
+                                        params.push(self.token.clone())
+                                    }
+                                    _ => {}
+                                }
+                                self.next();
+                            }
+                            self.next(); // Go past the )
+                            match self.statement() {
+                                Some(stat) => {
+                                    Some(FuncExpression(e, params, Box::new(stat)))
+                                }
+                                None => {
+                                    println!("T{:?}", self.token);
+                                    None
+                                }
+                            }
+                        } else {
+                            None
+                        }
+                    }
+                    val => {
+                        None
+                    }
+                }
             }
             EndOfFile => {
-                println!("Reached end of tokens..");
+                println!("Reached end of tokens.. {:?}", self.token);
                 None
             }
         }
