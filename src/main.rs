@@ -1,4 +1,4 @@
-use std::fmt::{format, Write};
+use std::fmt::{Write};
 #[allow(dead_code,unused_variables)]
 use std::time::Instant;
 use crate::lexer::Lexer;

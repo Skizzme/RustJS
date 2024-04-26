@@ -1,9 +1,10 @@
-use std::cmp::PartialEq;
+
 use std::rc::Rc;
-use crate::lexer::{Token, TokenType};
+use crate::lexer::{Token};
 use crate::lexer::TokenType::*;
 use crate::parser::Node::*;
 
+#[allow(unused)]
 #[derive(Debug)]
 pub enum Node {
     FunctionCall(Rc<Token>, Vec<Node>),
@@ -31,6 +32,7 @@ pub struct Parser {
     last_token: Rc<Token>,
 }
 
+#[allow(unused)]
 impl Parser {
     pub fn new(tokens: Vec<Rc<Token>>) -> Parser {
         let t = tokens.get(0).unwrap().clone();
@@ -122,7 +124,7 @@ impl Parser {
                         let inc = self.expression().unwrap();
                         Some(ForLoop(Box::new(var), Box::new(condition), Box::new(inc)))
                     }
-                    val => {
+                    _val => {
                         None
                     }
                 }
@@ -148,7 +150,7 @@ impl Parser {
                         self.next();
                         Some(Array(items))
                     }
-                    val => { None } // These cases should be handled when this is called from other places, such as there being a (), and this running into the )
+                    _val => { None } // These cases should be handled when this is called from other places, such as there being a (), and this running into the )
                 }
             }
             Number => {
@@ -194,7 +196,7 @@ impl Parser {
                             }
                         }
                     }
-                    str => {
+                    _str => {
                         Some(Identifier(id))
                     } // Should be handled below
                 }
@@ -237,7 +239,7 @@ impl Parser {
                             None
                         }
                     }
-                    val => {
+                    _val => {
                         None
                     }
                 }

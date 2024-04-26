@@ -1,4 +1,3 @@
-use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use crate::lexer::TokenType::*;
@@ -40,6 +39,7 @@ impl Debug for Token {
     }
 }
 
+#[allow(unused)]
 impl Token {
     pub fn new(value: String, token_type: TokenType, start_index: usize, end_index: usize, start_line: usize, end_line: usize, start_column: usize, end_column: usize,) -> Self {
         Token {
@@ -52,10 +52,6 @@ impl Token {
             start_column,
             end_column,
         }
-    }
-
-    pub fn pr(&self) {
-        println!("{:?}", self);
     }
 
     pub fn value(&self) -> &str {
