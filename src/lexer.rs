@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use crate::lexer::TokenType::*;
@@ -35,7 +36,7 @@ pub struct Token {
 
 impl Debug for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
+        f.write_str(format!("Token(\n    value: \"{}\",\n    token_type: {:?}\n)", self.value, self.token_type).as_str())
     }
 }
 
@@ -127,16 +128,20 @@ impl<'a> Lexer<'a> {
                     self.end_token(StringLit);
                 }
                 // Punctuators
-                '(' | ')' | '{' | '}' | '[' | ']' | '<' | '>' | ',' | '.' | ';' => {
+                '(' | ')' | '{' | '}' | '[' | ']' | ',' | '.' | ';' => {
                     self.update_token();
                     self.end_token(Punctuator);
                 }
                 // Operators
                 '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' => {
                     self.update_token();
-                    if self.next() == '=' {
+                    let next = self.next();
+                    if (next == '+' || next == '-' || next == '<' || next == '>') && next == self.char {
                         self.update_token();
                     }
+                    // if next == '=' {
+                    //     self.update_token();
+                    // }
                     self.end_token(Operator);
                 }
                 char => {

@@ -16,7 +16,10 @@ pub enum Node {
     ExprStatement(Box<Node>),
     FuncExpression(Rc<Token>, Vec<Rc<Token>>, Box<Node>), // The token of the "function" word, params, block statement
     Block(Vec<Node>),
-    ListMember(Box<Node>, Box<Node>) // Identifier, Indexer EX list, i+1
+    ListMember(Box<Node>, Box<Node>), // Identifier, Indexer EX list, i+1
+    BinaryExpr(Box<Node>, Rc<Token>, Box<Node>), // Left, operator, Right
+    UnaryExpr(Box<Node>, Rc<Token>), // Left, operator
+    ForLoop(Box<Node>, Box<Node>, Box<Node>), // Var, condition, increment
 }
 
 #[derive(Debug)]
@@ -79,28 +82,49 @@ impl Parser {
             Number => {None}
             StringLit => {None}
             Word => {
-                Some(ExprStatement(Box::new(self.expression().unwrap())))
+                match self.expression() {
+                    Some(expr) => {
+                        Some(ExprStatement(Box::new(expr)))
+                    }
+                    None => {None}
+                }
             }
             Operator => {None}
             Keyword => {
-                if self.token.value() == "var" {
-                    let id = self.next();
+                match self.token.value() {
+                    "var" => {
+                        let id = self.next();
 
-                    if self.next().value() == "=" {
-                        self.next();
-                        match self.expression() {
-                            None => {
-                                None
+                        if self.next().value() == "=" {
+                            self.next();
+                            match self.expression() {
+                                None => {
+                                    None
+                                }
+                                Some(expr) => {
+                                    Some(VarDec(id.clone(), Box::new(expr)))
+                                }
                             }
-                            Some(expr) => {
-                                Some(VarDec(id.clone(), Box::new(expr)))
-                            }
+                        } else {
+                            None
                         }
-                    } else {
+                    }
+                    "for" => {
+                        self.next(); // Past "for"
+                        self.next(); // Past (
+                        let var = self.statement().unwrap();
+                        if self.token.value() != ";" {
+                            return None;
+                        }
+                        self.next(); // Past ;
+                        let condition = self.expression().unwrap();
+                        self.next(); // Past ;
+                        let inc = self.expression().unwrap();
+                        Some(ForLoop(Box::new(var), Box::new(condition), Box::new(inc)))
+                    }
+                    val => {
                         None
                     }
-                } else {
-                    None
                 }
             }
             _ => {None}
@@ -108,7 +132,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Option<Node> { // Should always be positioned at the last token of the statement
-        match self.token.token_type() {
+        let expr = match self.token.token_type() {
             Punctuator => {
                 match self.token.value() {
                     "[" => {
@@ -220,6 +244,37 @@ impl Parser {
             }
             EndOfFile => {
                 println!("Reached end of tokens.. {:?}", self.token);
+                None
+            }
+        };
+        // For binary operators / comparisons
+        match expr {
+            Some(left) => {
+                match self.token.token_type() {
+                    Operator => {
+                        let op = self.token.clone();
+                        match op.value() {
+                            "++" => {
+                                return Some(UnaryExpr(Box::new(left), op));
+                            }
+                            _ => {}
+                        }
+                        self.next();
+                        match self.expression() {
+                            Some(right) => {
+                                Some(BinaryExpr(Box::new(left), op, Box::new(right)))
+                            }
+                            None => {
+                                None
+                            }
+                        }
+                    }
+                    _ => {
+                        Some(left)
+                    }
+                }
+            }
+            None => {
                 None
             }
         }
