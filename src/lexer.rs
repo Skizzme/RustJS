@@ -21,7 +21,7 @@ impl Default for TokenType {
 }
 
 #[allow(dead_code,unused_variables)]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Token {
     value: String,
     token_type: TokenType,
@@ -33,11 +33,11 @@ pub struct Token {
     end_column: usize
 }
 
-impl Debug for Token {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("Token(\n    value: \"{}\",\n    token_type: {:?}\n)", self.value, self.token_type).as_str())
-    }
-}
+// impl Debug for Token {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         f.write_str(format!("Token(\n    value: \"{}\",\n    token_type: {:?}\n)", self.value, self.token_type).as_str())
+//     }
+// }
 
 #[allow(unused)]
 impl Token {
@@ -135,10 +135,8 @@ impl<'a> Lexer<'a> {
                     if (next == '+' || next == '-' || next == '<' || next == '>') && next == self.char {
                         self.update_token();
                     }
-                    // if next == '=' {
-                    //     self.update_token();
-                    // }
                     self.end_token(Operator);
+                    continue 'char;
                 }
                 char => {
                     // Any words/identifiers

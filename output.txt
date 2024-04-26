@@ -1,0 +1,100 @@
+ExprStatement(
+    FunctionCall(
+        Token {
+            value: "call",
+            token_type: Word,
+            start_index: 0,
+            end_index: 4,
+            start_line: 0,
+            end_line: 0,
+            start_column: 0,
+            end_column: 4,
+        },
+        [
+            BinaryExpr(
+                Literal(
+                    Token {
+                        value: "1",
+                        token_type: Number,
+                        start_index: 5,
+                        end_index: 6,
+                        start_line: 0,
+                        end_line: 0,
+                        start_column: 5,
+                        end_column: 6,
+                    },
+                ),
+                Token {
+                    value: "+",
+                    token_type: Operator,
+                    start_index: 6,
+                    end_index: 7,
+                    start_line: 0,
+                    end_line: 0,
+                    start_column: 6,
+                    end_column: 7,
+                },
+                BinaryExpr(
+                    Literal(
+                        Token {
+                            value: "2",
+                            token_type: Number,
+                            start_index: 8,
+                            end_index: 9,
+                            start_line: 0,
+                            end_line: 0,
+                            start_column: 8,
+                            end_column: 9,
+                        },
+                    ),
+                    Token {
+                        value: "*",
+                        token_type: Operator,
+                        start_index: 9,
+                        end_index: 10,
+                        start_line: 0,
+                        end_line: 0,
+                        start_column: 9,
+                        end_column: 10,
+                    },
+                    BinaryExpr(
+                        Literal(
+                            Token {
+                                value: "4",
+                                token_type: Number,
+                                start_index: 10,
+                                end_index: 11,
+                                start_line: 0,
+                                end_line: 0,
+                                start_column: 10,
+                                end_column: 11,
+                            },
+                        ),
+                        Token {
+                            value: "/",
+                            token_type: Operator,
+                            start_index: 11,
+                            end_index: 12,
+                            start_line: 0,
+                            end_line: 0,
+                            start_column: 11,
+                            end_column: 12,
+                        },
+                        Literal(
+                            Token {
+                                value: "5",
+                                token_type: Number,
+                                start_index: 12,
+                                end_index: 13,
+                                start_line: 0,
+                                end_line: 0,
+                                start_column: 12,
+                                end_column: 13,
+                            },
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

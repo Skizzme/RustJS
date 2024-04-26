@@ -8,7 +8,8 @@ use crate::parser::Node::*;
 #[derive(Debug)]
 pub enum Node {
     FunctionCall(Rc<Token>, Vec<Node>),
-    Array(Vec<Node>),
+    List(Vec<Node>),
+    ListMember(Box<Node>, Box<Node>), // Identifier, Indexer EX list, i+1
     Member(Rc<Node>, Box<Node>),
     VarDec(Rc<Token>, Box<Node>),
     VarAssign(Box<Node>, Box<Node>),
@@ -17,7 +18,6 @@ pub enum Node {
     ExprStatement(Box<Node>),
     FuncExpression(Rc<Token>, Vec<Rc<Token>>, Box<Node>), // The token of the "function" word, params, block statement
     Block(Vec<Node>),
-    ListMember(Box<Node>, Box<Node>), // Identifier, Indexer EX list, i+1
     BinaryExpr(Box<Node>, Rc<Token>, Box<Node>), // Left, operator, Right
     UnaryExpr(Box<Node>, Rc<Token>), // Left, operator
     ForLoop(Box<Node>, Box<Node>, Box<Node>), // Var, condition, increment
@@ -148,7 +148,13 @@ impl Parser {
                             self.next();
                         }
                         self.next();
-                        Some(Array(items))
+                        Some(List(items))
+                    }
+                    "(" => {
+                        self.next();
+                        let expr = self.expression();
+                        self.next();
+                        expr
                     }
                     _val => { None } // These cases should be handled when this is called from other places, such as there being a (), and this running into the )
                 }
@@ -196,6 +202,10 @@ impl Parser {
                             }
                         }
                     }
+                    "[" => {
+                        self.next();
+                        Some(ListMember(Box::new(Identifier(id)), Box::new(self.expression().unwrap())))
+                    }
                     _str => {
                         Some(Identifier(id))
                     } // Should be handled below
@@ -231,7 +241,6 @@ impl Parser {
                                     Some(FuncExpression(e, params, Box::new(stat)))
                                 }
                                 None => {
-                                    println!("T{:?}", self.token);
                                     None
                                 }
                             }
@@ -249,14 +258,15 @@ impl Parser {
                 None
             }
         };
-        // For binary operators / comparisons
+
         match expr {
             Some(left) => {
                 match self.token.token_type() {
+                    // For binary operators / comparisons /
                     Operator => {
                         let op = self.token.clone();
                         match op.value() {
-                            "++" => {
+                            "++" | "--" => {
                                 return Some(UnaryExpr(Box::new(left), op));
                             }
                             _ => {}
