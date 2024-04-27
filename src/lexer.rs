@@ -129,12 +129,20 @@ impl<'a> Lexer<'a> {
                     self.end_token(Punctuator);
                 }
                 // Operators
-                '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' => {
+                '=' | '+' | '-' | '<' | '>' | '*' | '/' | '!' | '&' | '|' => {
                     let char = self.char;
                     self.update_token();
                     self.next();
+                    // All negative numbers
+                    if char == '-' {
+                        if self.char.is_numeric() {
+                            self.number();
+                            println!("t:{:?}", self.token);
+                            continue 'char
+                        }
+                    }
 
-                    if ((self.char == '+' || self.char == '-' || self.char == '<' || self.char == '>') && self.char == char) ||
+                    if ((self.char == '+' || self.char == '-' || self.char == '<' || self.char == '>' || self.char == '&' || self.char == '|') && self.char == char) ||
                         (self.char == '=' && (char == '!' || char == '='))
                     {
                         self.update_token();
@@ -162,18 +170,22 @@ impl<'a> Lexer<'a> {
                         continue 'char;
                     }
                     // Any numbers. EX. 1, 1.2, 1_200
-                    if char.is_numeric() {
-                        while self.char.is_numeric() || self.char == '.' || self.char == '_' {
-                            self.update_token();
-                            self.next();
-                        }
-                        self.end_token(Number);
+                    if self.char.is_numeric() {
+                        self.number();
                         continue 'char;
                     }
                 }
             }
             self.next();
         }
+    }
+
+    fn number(&mut self) {
+        while self.char.is_numeric() || self.char == '.' || self.char == '_' {
+            self.update_token();
+            self.next();
+        }
+        self.end_token(Number);
     }
 
     fn update_token(&mut self) {

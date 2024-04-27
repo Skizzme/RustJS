@@ -130,6 +130,7 @@ impl Parser {
                         self.next(); // Past (
                         let condition = Box::new(self.expression().unwrap());
                         self.next();
+                        println!("B{:#?}, A{:#?}", condition, self.token);
                         Some(IfStatement(condition, Box::new(self.statement().unwrap())))
                     }
                     _val => {
@@ -282,6 +283,7 @@ impl Parser {
                         self.next();
                         match self.expression() {
                             Some(right) => {
+                                // println!("LEFT: {:#?}, OP:{:#?}, RIGHT:{:#?}", left, op, right);
                                 Some(BinaryExpr(Box::new(left), op, Box::new(right)))
                             }
                             None => {
