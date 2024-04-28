@@ -1,6 +1,7 @@
-
+use std::any::Any;
+use std::cmp::PartialEq;
 use std::rc::Rc;
-use crate::lexer::{Token};
+use crate::lexer::{Token, TokenType};
 use crate::lexer::TokenType::*;
 use crate::parser::Node::*;
 
@@ -52,9 +53,11 @@ impl Parser {
                 Some(s) => {
                     self.statements.push(Rc::new(s));
                 }
-                None => {}
+                None => {
+                    println!("Skipping over: {:?}", self.token);
+                    self.next();
+                }
             }
-            self.next();
         }
     }
 
@@ -75,6 +78,7 @@ impl Parser {
                                 }
                             }
                         }
+                        self.next();
                         Some(Block(statements))
                     }
                     _ => {
@@ -128,9 +132,9 @@ impl Parser {
                     "if" => {
                         self.next(); // Past if
                         self.next(); // Past (
-                        let condition = Box::new(self.expression().unwrap());
+                        let condition = Box::new(self.bin_expr().unwrap());
                         self.next();
-                        println!("B{:#?}, A{:#?}", condition, self.token);
+
                         Some(IfStatement(condition, Box::new(self.statement().unwrap())))
                     }
                     _val => {
@@ -143,7 +147,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Option<Node> { // Should always be positioned at the last token of the statement
-        let expr = match self.token.token_type() {
+        match self.token.token_type() {
             Punctuator => {
                 match self.token.value() {
                     "[" => {
@@ -161,7 +165,7 @@ impl Parser {
                     }
                     "(" => {
                         self.next();
-                        let expr = self.expression();
+                        let expr = self.bin_expr();
                         self.next();
                         expr
                     }
@@ -198,6 +202,7 @@ impl Parser {
                             }
                             self.next();
                         }
+                        self.next();
                         Some(FunctionCall(id, args))
                     }
                     "." => {
@@ -236,13 +241,14 @@ impl Parser {
                         if self.next().value() == "(" {
                             let mut params = Vec::new();
                             while self.token.value() == "(" || self.token.value() == "," {
+                                self.next();
                                 match self.token.token_type() {
                                     Word => {
-                                        params.push(self.token.clone())
+                                        params.push(self.token.clone());
+                                        self.next();
                                     }
                                     _ => {}
                                 }
-                                self.next();
                             }
                             self.next(); // Go past the )
                             match self.statement() {
@@ -266,35 +272,41 @@ impl Parser {
                 println!("Reached end of tokens.. {:?}", self.token);
                 None
             }
-        };
+        }
+    }
 
-        match expr {
+    fn bin_expr(&mut self) -> Option<Node> {
+        match self.expression() {
             Some(left) => {
-                match self.token.token_type() {
-                    // For binary operators / comparisons /
-                    Operator => {
-                        let op = self.token.clone();
-                        match op.value() {
-                            "++" | "--" => {
-                                return Some(UnaryExpr(Box::new(left), op));
-                            }
-                            _ => {}
-                        }
-                        self.next();
-                        match self.expression() {
-                            Some(right) => {
-                                // println!("LEFT: {:#?}, OP:{:#?}, RIGHT:{:#?}", left, op, right);
-                                Some(BinaryExpr(Box::new(left), op, Box::new(right)))
-                            }
-                            None => {
-                                None
-                            }
-                        }
+                let mut e = left;
+                let mut op = self.token.clone();
+                match op.value() {
+                    "++" | "--" => {
+                        return Some(UnaryExpr(Box::new(e), op));
                     }
-                    _ => {
-                        Some(left)
-                    }
+                    _ => {}
                 }
+                while self.token.is_operator() {
+                    let right = match self.token.value() {
+                        "||" | "&&" => {
+                            self.next();
+                            self.bin_expr()
+                        }
+                        _ => {
+                            self.next();
+                            self.expression()
+                        }
+                    };
+                    match right {
+                        Some(right) => {
+                            e = BinaryExpr(Box::new(e), op, Box::new(right));
+                        }
+                        None => {
+                        }
+                    }
+                    op = self.token.clone();
+                }
+                Some(e)
             }
             None => {
                 None

@@ -1,96 +1,16 @@
-VarDec(
-    Token {
-        value: "t",
-        token_type: Word,
-        start_index: 4,
-        end_index: 5,
-        start_line: 0,
-        end_line: 0,
-        start_column: 4,
-        end_column: 5,
-    },
-    BinaryExpr(
-        Literal(
-            Token {
-                value: "1",
-                token_type: Number,
-                start_index: 8,
-                end_index: 9,
-                start_line: 0,
-                end_line: 0,
-                start_column: 8,
-                end_column: 9,
-            },
+ExprStatement(
+    Member(
+        Identifier(
+            Token( value: "a", token_type: Word ),
         ),
-        Token {
-            value: "+",
-            token_type: Operator,
-            start_index: 9,
-            end_index: 10,
-            start_line: 0,
-            end_line: 0,
-            start_column: 9,
-            end_column: 10,
-        },
-        BinaryExpr(
-            Literal(
-                Token {
-                    value: "3",
-                    token_type: Number,
-                    start_index: 10,
-                    end_index: 11,
-                    start_line: 0,
-                    end_line: 0,
-                    start_column: 10,
-                    end_column: 11,
-                },
-            ),
-            Token {
-                value: "/",
-                token_type: Operator,
-                start_index: 11,
-                end_index: 12,
-                start_line: 0,
-                end_line: 0,
-                start_column: 11,
-                end_column: 12,
-            },
-            BinaryExpr(
-                Literal(
-                    Token {
-                        value: "2",
-                        token_type: Number,
-                        start_index: 12,
-                        end_index: 13,
-                        start_line: 0,
-                        end_line: 0,
-                        start_column: 12,
-                        end_column: 13,
-                    },
-                ),
-                Token {
-                    value: "+",
-                    token_type: Operator,
-                    start_index: 13,
-                    end_index: 14,
-                    start_line: 0,
-                    end_line: 0,
-                    start_column: 13,
-                    end_column: 14,
-                },
-                Literal(
-                    Token {
-                        value: "4",
-                        token_type: Number,
-                        start_index: 14,
-                        end_index: 15,
-                        start_line: 0,
-                        end_line: 0,
-                        start_column: 14,
-                        end_column: 15,
-                    },
-                ),
-            ),
+        FunctionCall(
+            Token( value: "b", token_type: Word ),
+            [],
         ),
+    ),
+)
+ExprStatement(
+    Identifier(
+        Token( value: "c", token_type: Word ),
     ),
 )

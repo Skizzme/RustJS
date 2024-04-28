@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::lexer::TokenType::*;
 
 #[allow(dead_code,unused_variables)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     Punctuator,
     Number,
@@ -21,7 +21,7 @@ impl Default for TokenType {
 }
 
 #[allow(dead_code,unused_variables)]
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct Token {
     value: String,
     token_type: TokenType,
@@ -33,11 +33,35 @@ pub struct Token {
     end_column: usize
 }
 
-// impl Debug for Token {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         f.write_str(format!("Token(\n    value: \"{}\",\n    token_type: {:?}\n)", self.value, self.token_type).as_str())
-//     }
-// }
+impl Token {
+    pub fn is_punctuator(&self) -> bool {
+        self.token_type == Punctuator
+    }
+    pub fn is_number(&self) -> bool {
+        self.token_type == Number
+    }
+    pub fn is_string_lit(&self) -> bool {
+        self.token_type == StringLit
+    }
+    pub fn is_word(&self) -> bool {
+        self.token_type == Word
+    }
+    pub fn is_operator(&self) -> bool {
+        self.token_type == Operator
+    }
+    pub fn is_keyword(&self) -> bool {
+        self.token_type == Keyword
+    }
+    pub fn is_end_of_file(&self) -> bool {
+        self.token_type == EndOfFile
+    }
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
+    }
+}
 
 #[allow(unused)]
 impl Token {
@@ -137,7 +161,6 @@ impl<'a> Lexer<'a> {
                     if char == '-' {
                         if self.char.is_numeric() {
                             self.number();
-                            println!("t:{:?}", self.token);
                             continue 'char
                         }
                     }
@@ -212,7 +235,6 @@ impl<'a> Lexer<'a> {
         if self.char == '\n' {
             self.column = 0;
             self.line += 1;
-            self.next();
         } else if self.char == '\r' || self.char == '\t' {
             self.next();
         }
