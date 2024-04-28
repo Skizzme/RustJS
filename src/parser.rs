@@ -8,7 +8,7 @@ use crate::parser::Node::*;
 #[allow(unused)]
 #[derive(Debug)]
 pub enum Node {
-    FunctionCall(Rc<Token>, Vec<Node>),
+    FunctionCall(Box<Node>, Vec<Node>),
     List(Vec<Node>),
     ListMember(Box<Node>, Box<Node>), // Identifier, Indexer EX list, i+1
     Member(Rc<Node>, Box<Node>),
@@ -184,46 +184,60 @@ impl Parser {
             }
             Word => {
                 let id = self.token.clone();
-                match self.next().value() {
-                    "(" => {
-                        self.next(); // Skips the (
-                        let mut args = Vec::new();
-                        loop {
+                let mut ex = Identifier(id);
+                self.next();
+                loop {
+                    match self.token.value() {
+                        "(" => {
+                            self.next(); // Skips the (
+                            let mut args = Vec::new();
+                            loop {
+                                match self.expression() {
+                                    Some(expr) => {
+                                        args.push(expr);
+                                    }
+                                    None => {
+                                        break
+                                    }
+                                }
+                                if self.token.value() != "," {
+                                    break
+                                }
+                                self.next();
+                            }
+                            self.next();
+                            ex = FunctionCall(Box::new(ex), args);
+                            println!("1{:?}", ex);
+                            break
+                        }
+                        "." => {
+                            self.next();
                             match self.expression() {
                                 Some(expr) => {
-                                    args.push(expr);
+                                    ex = Member(Rc::new(ex), Box::new(expr));
+                                    println!("2{:?} {:?}", ex, self.token);
                                 }
                                 None => {
+                                    // None
                                     break
                                 }
                             }
-                            if self.token.value() != "," {
-                                break
+                        }
+                        "[" => {
+                            self.next();
+                            let member = self.expression();
+                            if member.is_some() {
+                                ex = ListMember(Box::new(ex), Box::new(member.unwrap()));
                             }
                             self.next();
                         }
-                        self.next();
-                        Some(FunctionCall(id, args))
+                        _str => {
+                            // Some(ex);
+                            break
+                        } // Should be handled below
                     }
-                    "." => {
-                        self.next();
-                        match self.expression() {
-                            Some(expr) => {
-                                Some(Member(Rc::new(Identifier(id)), Box::new(expr)))
-                            }
-                            None => {
-                                None
-                            }
-                        }
-                    }
-                    "[" => {
-                        self.next();
-                        Some(ListMember(Box::new(Identifier(id)), Box::new(self.expression().unwrap())))
-                    }
-                    _str => {
-                        Some(Identifier(id))
-                    } // Should be handled below
                 }
+                return Some(ex)
             }
             Operator => {
                 println!("Operator? {:?}", self.token);
