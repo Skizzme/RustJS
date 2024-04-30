@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::rc::Rc;
 use crate::lexer::{Token, TokenType};
 use crate::lexer::TokenType::*;
@@ -11,9 +12,10 @@ pub enum Node {
     FunctionCall(Box<Node>, Vec<Node>),
     List(Vec<Node>),
     ListMember(Box<Node>, Box<Node>), // Identifier, Indexer EX list, i+1
+    // Object(HashMap<Box<Node>, >) // TODO
     Member(Rc<Node>, Box<Node>),
-    VarDec(Rc<Token>, Box<Node>),
-    VarAssign(Box<Node>, Box<Node>),
+    VarDec(Rc<Token>, Box<Option<Node>>),
+    VarAssign(Box<Node>, Box<Node>), // Identifier, value
     Literal(Rc<Token>),
     Identifier(Rc<Token>),
     ExprStatement(Box<Node>),
@@ -54,7 +56,7 @@ impl Parser {
                     self.statements.push(Rc::new(s));
                 }
                 None => {
-                    println!("Skipping over: {:?}", self.token);
+                    // println!("Skipping over: {:?}", self.token);
                     self.next();
                 }
             }
@@ -62,7 +64,7 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Option<Node> {
-        match self.token.token_type() {
+        let mut stat = match self.token.token_type() {
             Punctuator => {
                 match self.token.value() {
                     "{" => {
@@ -93,7 +95,10 @@ impl Parser {
                     Some(expr) => {
                         Some(ExprStatement(Box::new(expr)))
                     }
-                    None => {None}
+                    None => {
+                        println!("what do: {:?}", self.token);
+                        None
+                    }
                 }
             }
             Operator => {None}
@@ -104,12 +109,13 @@ impl Parser {
 
                         if self.next().value() == "=" {
                             self.next();
-                            match self.expression() {
+                            println!("none {:?}", self.token);
+                            match self.bin_expr() {
                                 None => {
                                     None
                                 }
                                 Some(expr) => {
-                                    Some(VarDec(id.clone(), Box::new(expr)))
+                                    Some(VarDec(id.clone(), Box::new(Some(expr))))
                                 }
                             }
                         } else {
@@ -124,17 +130,18 @@ impl Parser {
                             return None;
                         }
                         self.next(); // Past ;
-                        let condition = self.expression().unwrap();
+                        let condition = self.bin_expr().unwrap();
                         self.next(); // Past ;
-                        let inc = self.expression().unwrap();
-                        Some(ForLoop(Box::new(var), Box::new(condition), Box::new(inc)))
+                        match self.bin_expr() {
+                            Some(inc) => {Some(ForLoop(Box::new(var), Box::new(condition), Box::new(inc)))}
+                            None => {None}
+                        }
                     }
                     "if" => {
                         self.next(); // Past if
                         self.next(); // Past (
                         let condition = Box::new(self.bin_expr().unwrap());
                         self.next();
-
                         Some(IfStatement(condition, Box::new(self.statement().unwrap())))
                     }
                     _val => {
@@ -142,8 +149,29 @@ impl Parser {
                     }
                 }
             }
-            _ => {None}
+            _ => {
+
+                println!("what do: {:?}", self.token);
+                None
+            }
+        };
+        if stat.is_some() && self.token.value() == "," {
+            self.next();
+            let mut stats = Vec::new();
+            stats.push(stat.unwrap());
+            while self.token.value() != ";" {
+                match self.statement() {
+                    Some(st) => {
+                        stats.push(st)
+                    }
+                    None => {
+                        self.next();
+                    }
+                }
+            }
+            stat = Some(Block(stats));
         }
+        stat
     }
 
     fn expression(&mut self) -> Option<Node> { // Should always be positioned at the last token of the statement
@@ -154,11 +182,18 @@ impl Parser {
                         self.next();
                         let mut items = Vec::new();
                         loop {
-                            items.push(self.expression().unwrap());
-                            if self.token.value() != "," {
-                                break;
+                            match self.expression() {
+                                Some(ex) => {
+                                    items.push(ex);
+                                    if self.token.value() != "," {
+                                        break;
+                                    }
+                                    self.next();}
+
+                                None => {
+                                    break
+                                }
                             }
-                            self.next();
                         }
                         self.next();
                         Some(List(items))
@@ -207,7 +242,6 @@ impl Parser {
                             }
                             self.next();
                             ex = FunctionCall(Box::new(ex), args);
-                            println!("1{:?}", ex);
                             break
                         }
                         "." => {
@@ -215,7 +249,6 @@ impl Parser {
                             match self.expression() {
                                 Some(expr) => {
                                     ex = Member(Rc::new(ex), Box::new(expr));
-                                    println!("2{:?} {:?}", ex, self.token);
                                 }
                                 None => {
                                     // None
@@ -231,17 +264,34 @@ impl Parser {
                             }
                             self.next();
                         }
+                        "=" => {
+                            self.next();
+                            match self.bin_expr() {
+                                Some(bin_expr) => {
+                                    ex = VarAssign(Box::new(ex), Box::new(bin_expr))
+                                }
+                                None => {}
+                            }
+
+                        }
                         _str => {
-                            // Some(ex);
                             break
-                        } // Should be handled below
+                        }
                     }
                 }
                 return Some(ex)
             }
             Operator => {
-                println!("Operator? {:?}", self.token);
-                None
+                let op = self.token.clone();
+                self.next();
+                match self.expression() {
+                    Some(expr) => {
+                        Some(UnaryExpr(Box::new(expr), op))
+                    }
+                    None => {
+                        None
+                    }
+                }
             },
             Keyword => {
                 match self.token.value() {

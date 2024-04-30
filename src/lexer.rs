@@ -21,7 +21,7 @@ impl Default for TokenType {
 }
 
 #[allow(dead_code,unused_variables)]
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Token {
     value: String,
     token_type: TokenType,
@@ -57,11 +57,11 @@ impl Token {
     }
 }
 
-impl Debug for Token {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
-    }
-}
+// impl Debug for Token {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         f.write_str(format!("Token( value: \"{}\", token_type: {:?} )", self.value, self.token_type).as_str())
+//     }
+// }
 
 #[allow(unused)]
 impl Token {
@@ -137,10 +137,11 @@ impl<'a> Lexer<'a> {
 
             match self.char {
                 // String literals inside double quotes
-                '"' => {
+                '"' | '\'' => {
+                    let start = self.char;
                     self.update_token();
 
-                    while self.next() != '"' && self.last_char != '\\' && self.char != '\r' {
+                    while self.next() != start && self.last_char != '\\' && self.char != '\r' {
                         self.update_token();
                     }
 
@@ -177,7 +178,7 @@ impl<'a> Lexer<'a> {
                 char => {
                     // Any words/identifiers
                     if char.is_alphabetic() {
-                        while self.char.is_alphabetic() {
+                        while self.char.is_alphabetic() || self.char.is_numeric() {
                             self.update_token();
                             self.next();
                         }
